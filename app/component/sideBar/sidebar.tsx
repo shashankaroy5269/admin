@@ -1,16 +1,65 @@
-// export default function Sidebar() {
-//   return (
-//     <div className="w-64 bg-gradient-to-b from-blue-500 to-indigo-600 text-white p-5">
+"use client";
 
-//       <h1 className="text-xl font-bold mb-8">MEDPRO</h1>
+import styles from "./sidebar.module.css";
+import { useRouter, usePathname } from "next/navigation";
 
-//       <ul className="space-y-4">
-//         <li className="font-semibold">Dashboard</li>
-//         <li className="opacity-80 hover:opacity-100 cursor-pointer">Doctors</li>
-//         <li className="opacity-80 hover:opacity-100 cursor-pointer">Patients</li>
-//         <li className="opacity-80 hover:opacity-100 cursor-pointer">Appointments</li>
-//         <li className="opacity-80 hover:opacity-100 cursor-pointer">Departments</li>
-//       </ul>
-//     </div>
-//   );
-// }
+export default function Sidebar() {
+  const router = useRouter();
+  const path = usePathname();
+
+  return (
+    <div className={styles.sidebar}>
+      <div>
+        <h2 className={styles.logo}>MediCore</h2>
+
+        <ul className={styles.menu}>
+          <li
+            className={`${styles.menuItem} ${
+              path === "/dashboard" ? styles.active : ""
+            }`}
+            onClick={() => router.push("/dashboard")}
+          >
+            <span className={styles.icon}>🏠</span> Dashboard
+          </li>
+
+          <li
+            className={`${styles.menuItem} ${
+              path === "/departments" ? styles.active : ""
+            }`}
+            onClick={() => router.push("/departments")}
+          >
+            <span className={styles.icon}>🏢</span> Departments
+          </li>
+
+          <li
+            className={`${styles.menuItem} ${
+              path === "/doctors" ? styles.active : ""
+            }`}
+            onClick={() => router.push("/doctors/list")}
+          >
+            <span className={styles.icon}>👨‍⚕️</span> Doctors
+          </li>
+
+          <li
+            className={`${styles.menuItem} ${
+              path === "/appointments" ? styles.active : ""
+            }`}
+            onClick={() => router.push("/appointments")}
+          >
+            <span className={styles.icon}>📅</span> Appointments
+          </li>
+        </ul>
+      </div>
+
+      <div
+        className={styles.logout}
+        onClick={() => {
+          localStorage.clear();
+          router.push("/auth/signin");
+        }}
+      >
+        🚪 Logout
+      </div>
+    </div>
+  );
+}

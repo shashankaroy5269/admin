@@ -1,0 +1,48 @@
+.container {
+  color: white;
+}
+
+/* Title */
+.title {
+  font-size: 24px;
+  margin-bottom: 20px;
+}
+
+/* Cards */
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 15px;
+  margin-bottom: 20px;
+}
+
+.card {
+  background: linear-gradient(135deg, #1e3a8a, #3b82f6);
+  padding: 15px;
+  border-radius: 12px;
+  text-align: center;
+}
+
+.card h3 {
+  font-size: 14px;
+}
+
+.card p {
+  font-size: 20px;
+  font-weight: bold;
+}
+
+/* Sections */
+.section {
+  background: #1e293b;
+  padding: 15px;
+  border-radius: 12px;
+  margin-bottom: 20px;
+}
+
+.item {
+  padding: 10px;
+  background: #0f172a;
+  border-radius: 8px;
+  margin-bottom: 8px;
+}

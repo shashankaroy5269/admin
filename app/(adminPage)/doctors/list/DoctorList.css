@@ -1,0 +1,90 @@
+.container {
+  margin-left: 240px;
+  padding: 20px;
+}
+
+/* HEADER */
+.top-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+/* BUTTON */
+.add-btn {
+  background: green;
+  padding: 10px;
+  border-radius: 8px;
+  color: white;
+}
+
+/* SEARCH */
+.search {
+  margin: 10px 0;
+  padding: 8px;
+  width: 250px;
+}
+
+/* TABLE */
+.table {
+  width: 100%;
+  background: #1e293b;
+  color: white;
+  border-radius: 10px;
+}
+
+.table th,
+.table td {
+  padding: 10px;
+}
+
+/* BUTTON */
+.btn {
+  padding: 6px 10px;
+  margin-right: 5px;
+  border-radius: 6px;
+  border: none;
+}
+
+.view {
+  background: blue;
+  color: white;
+}
+
+.delete {
+  background: red;
+  color: white;
+}
+
+/* MODAL */
+.overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal {
+  background: #0f172a;
+  padding: 20px;
+  border-radius: 12px;
+  color: white;
+}
+
+/* MODAL BUTTON */
+.modal-btns {
+  margin-top: 15px;
+}
+
+.edit-btn {
+  background: green;
+  padding: 8px;
+  margin-right: 10px;
+}
+
+.close-btn {
+  background: red;
+  padding: 8px;
+}

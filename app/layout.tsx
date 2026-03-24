@@ -1,6 +1,11 @@
 import "./globals.css";
 import { ReduxProvider } from "./Redux/store/provider";
 
+export const metadata = {
+  title: "Admin Panel",
+  description: "Hospital Management",
+};
+
 export default function RootLayout({
   children,
 }: {
@@ -9,7 +14,9 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <ReduxProvider>{children}</ReduxProvider>
+        <ReduxProvider>
+          {children}
+        </ReduxProvider>
       </body>
     </html>
   );
