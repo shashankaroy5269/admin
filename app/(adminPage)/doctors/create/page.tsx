@@ -4,6 +4,16 @@ import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../Redux/store/provider";
 import { createDoctor } from "../../../Redux/slice/doctorSlice";
 import { AxiosInstance } from "@/api/axios/axios";
+import dynamic from "next/dynamic";
+
+// 🔥 FIX: SSR issue solve
+const TimePicker = dynamic(() => import("react-time-picker"), {
+  ssr: false,
+});
+
+// CSS import order IMPORTANT
+import "react-time-picker/dist/TimePicker.css";
+import "react-clock/dist/Clock.css";
 import "./CreateDoctor.css";
 
 const CreateDoctor = () => {
@@ -20,6 +30,13 @@ const CreateDoctor = () => {
     endTime: "",
     slotDuration: "",
   });
+
+  // 🔥 hydration safe mount
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // 🔥 Load departments
   useEffect(() => {
@@ -46,7 +63,7 @@ const CreateDoctor = () => {
 
     const payload = {
       name: formData.name,
-      fees:formData.fees,
+      fees: formData.fees,
       departmentId: formData.departmentId,
       schedule: {
         startTime: formData.startTime,
@@ -73,9 +90,12 @@ const CreateDoctor = () => {
       .catch((err) => console.error(err));
   };
 
+  // 🔥 prevent hydration crash
+  if (!mounted) return null;
+
   return (
     <div className="form-container">
-      <h2>🏥 Add Doctor</h2>
+      <h2> Add Doctor</h2>
 
       <form onSubmit={handleSubmit} className="doctor-form">
 
@@ -126,23 +146,25 @@ const CreateDoctor = () => {
 
           <div className="form-group">
             <label>Start Time</label>
-            <input
-              type="time"
-              name="startTime"
+            <TimePicker
               value={formData.startTime}
-              onChange={handleChange}
-              required
+              onChange={(value) =>
+                setFormData({ ...formData, startTime: value as string })
+              }
+              disableClock={true}
+              clearIcon={null}
             />
           </div>
 
           <div className="form-group">
             <label>End Time</label>
-            <input
-              type="time"
-              name="endTime"
+            <TimePicker
               value={formData.endTime}
-              onChange={handleChange}
-              required
+ onChange={(value) =>
+                setFormData({ ...formData, endTime: value as string })
+              }
+              disableClock={true}
+              clearIcon={null}
             />
           </div>
 
@@ -159,8 +181,8 @@ const CreateDoctor = () => {
           />
         </div>
 
-        {error && <div className="error-msg">⚠️ {error}</div>}
- {/* 🔥 LOADING BUTTON */}
+        {error && <div className="error-msg"> {error}</div>}
+
         <button type="submit" className="submit-btn" disabled={loading}>
           {loading ? (
             <span className="loader-wrapper">

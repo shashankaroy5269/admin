@@ -3,21 +3,23 @@
 import { useEffect, useState } from "react";
 import styles from "./appointment.module.css";
 import { AxiosInstance } from "@/api/axios/axios";
+import { endPoints } from "@/api/endPoints/endPoints";
 
 export default function AppointmentPage() {
   const [appointments, setAppointments] = useState<any[]>([]);
   const [search, setSearch] = useState("");
   const [activeTab, setActiveTab] = useState("Pending");
 
-  // 🔥 LOAD DATA
+  // --- Pagination Logic ---
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 6; // एक पेज पर 6 कार्ड
+
   const loadData = async () => {
     try {
-      const res = await AxiosInstance.get(
-        "/admin/doctor/appointment/list"
-      );
-      setAppointments(res.data.data);
+      const res = await AxiosInstance.get(endPoints.appointment.list);
+      setAppointments(res.data.data || []);
     } catch (err) {
-      console.log(err);
+      console.error("Fetch Error:", err);
     }
   };
 
@@ -25,107 +27,101 @@ export default function AppointmentPage() {
     loadData();
   }, []);
 
-  // 🔍 FILTER
-  const filtered = appointments
-    .filter((a) => a.status === activeTab)
-    .filter((a) =>
-      a.name.toLowerCase().includes(search.toLowerCase())
-    );
+  // Filter Logic
+  const filtered = appointments.filter((a) => {
+    const statusMatch = a.status === activeTab;
+    const nameMatch = a.name?.toLowerCase().includes(search.toLowerCase());
+    return statusMatch && nameMatch;
+  });
 
-  // ✅ CONFIRM
+  // --- Pagination Calculation ---
+  const totalPages = Math.ceil(filtered.length / itemsPerPage);
+  const pagedData = filtered.slice(
+    (currentPage - 1) * itemsPerPage,
+    currentPage * itemsPerPage
+  );
+
   const handleConfirm = async (id: string) => {
-    await AxiosInstance.put(`/admin/doctor/appointment/${id}, {}`);
-    loadData();
+    try {
+      const url = endPoints.appointment.confirm(id);
+      await AxiosInstance.put(url, {});
+      alert("Appointment Confirmed! ✅");
+      loadData();
+    } catch (err) {
+      alert("Confirm failed.");
+    }
   };
 
-  // ❌ CANCEL
   const handleCancel = async (id: string) => {
-    await AxiosInstance.put(
-      `/admin/doctor/appointment/cancelld/${id}`,
-      {}
-    );
-    loadData();
+    try {
+      const url = endPoints.appointment.cancel(id);
+      await AxiosInstance.put(url, {});
+      alert("Appointment Cancelled! ❌");
+      loadData();
+    } catch (err) {
+      alert("Cancel failed.");
+    }
   };
 
   return (
     <div className={styles.container}>
-      <h1 className={styles.title}>Appointments</h1>
+      <h1 className={styles.title}>Appointments Management</h1>
 
-      {/* 🔍 SEARCH */}
-      <input
-        className={styles.search}
-        placeholder="Search patient..."
-        value={search}
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      {/* 🟢 Search और Tabs अब एक Row में आएंगे (CSS की मदद से) */}
+      <div className={styles.headerRow}>
+        <input
+          className={styles.search}
+          placeholder="Search patient name..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setCurrentPage(1); // सर्च करने पर वापस पेज 1 पर
+          }}
+        />
 
-      {/* 🔘 TABS */}
-      <div className={styles.tabs}>
-        <button
-          onClick={() => setActiveTab("Pending")}
-          className={activeTab === "Pending" ? styles.activeTab : ""}
-        >
-          Pending (
-          {appointments.filter((a) => a.status === "Pending").length}
-          )
-        </button>
+        <div className={styles.tabs}>
+          <button
+            onClick={() => { setActiveTab("Pending"); setCurrentPage(1); }}
+            className={activeTab === "Pending" ? styles.activeTab : ""}
+          >
+            Pending ({appointments.filter((a) => a.status === "Pending").length})
+          </button>
 
-        <button
-          onClick={() => setActiveTab("Confirmed")}
-          className={activeTab === "Confirmed" ? styles.activeTab : ""}
-        >
-          Confirmed (
-          {
-            appointments.filter((a) => a.status === "Confirmed").length
-          }
-          )
-        </button>
+          <button
+            onClick={() => { setActiveTab("Confirmed"); setCurrentPage(1); }}
+            className={activeTab === "Confirmed" ? styles.activeTab : ""}
+          >
+            Confirmed ({appointments.filter((a) => a.status === "Confirmed").length})
+          </button>
+        </div>
       </div>
 
-      {/* 🧩 CARDS */}
       <div className={styles.grid}>
-        {filtered.length === 0 ? (
-          <p>No appointments ❌</p>
+        {pagedData.length === 0 ? (
+          <p className={styles.noData}>No {activeTab} appointments found.</p>
         ) : (
-          filtered.map((a) => (
+          pagedData.map((a) => (
             <div key={a._id} className={styles.card}>
-              <h3>{a.name}</h3>
+              <div className={styles.cardHeader}>
+                <h3>{a.name}</h3>
+                <span className={a.status === "Confirmed" ? styles.confirmed : styles.pending}>
+                  {a.status}
+                </span>
+              </div>
 
-              <p>
-                📅 {new Date(a.date).toDateString()}
-              </p>
+              <div className={styles.details}>
+                <p>📅 {new Date(a.date).toLocaleDateString()}</p>
+                <p>⏰ {a.time}</p>
+                <p className={styles.id}>ID: {a._id}</p>
+              </div>
 
-              <p>⏰ {a.time}</p>
-
-              {/* STATUS */}
-              <span
-                className={
-                  a.status === "Confirmed"
-                    ? styles.confirmed
-                    : styles.pending
-                }
-              >
-                {a.status}
-              </span>
-
-              {/* ID */}
-              <p className={styles.id}>{a._id}</p>
-
-              {/* ACTIONS */}
               <div className={styles.actions}>
                 {a.status === "Pending" && (
-                  <button
-                    onClick={() => handleConfirm(a._id)}
-                    className={styles.confirmBtn}
-                  >
+                  <button onClick={() => handleConfirm(a._id)} className={styles.confirmBtn}>
                     Confirm
                   </button>
                 )}
-
-                <button
-                  onClick={() => handleCancel(a._id)}
-                  className={styles.cancelBtn}
-                >
+                <button onClick={() => handleCancel(a._id)} className={styles.cancelBtn}>
                   Cancel
                 </button>
               </div>
@@ -133,6 +129,27 @@ export default function AppointmentPage() {
           ))
         )}
       </div>
+
+      {/* ⏭️ Pagination Buttons */}
+      {totalPages > 1 && (
+        <div className={styles.pagination}>
+          <button 
+            disabled={currentPage === 1} 
+            onClick={() => setCurrentPage(currentPage - 1)}
+            className={styles.pageBtn}
+          >
+            Previous
+          </button>
+          <span className={styles.pageText}>Page {currentPage} of {totalPages}</span>
+          <button 
+            disabled={currentPage === totalPages} 
+            onClick={() => setCurrentPage(currentPage + 1)}
+            className={styles.pageBtn}
+          >
+            Next
+          </button>
+        </div>
+      )}
     </div>
   );
 }

@@ -1,8 +1,13 @@
- "use client";
+"use client";
 
 import { useEffect, useState } from "react";
 import styles from "./department.module.css";
 import { AxiosInstance } from "@/api/axios/axios";
+
+// ✅ ADD THESE
+import Swal from "sweetalert2";
+import { toast, ToastContainer } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
 
 export default function DepartmentPage() {
   const [search, setSearch] = useState("");
@@ -16,11 +21,9 @@ export default function DepartmentPage() {
 
   const [departments, setDepartments] = useState<any[]>([]);
 
-  // 📄 Pagination
   const [page, setPage] = useState(1);
   const perPage = 6;
 
-  // 🔥 Load Data
   const loadData = async () => {
     try {
       const res = await AxiosInstance.get("/admin/departments/list");
@@ -34,7 +37,6 @@ export default function DepartmentPage() {
     loadData();
   }, []);
 
-  // 🔍 Search
   const filtered = departments.filter((d: any) =>
     d.name.toLowerCase().includes(search.toLowerCase())
   );
@@ -46,14 +48,12 @@ export default function DepartmentPage() {
     page * perPage
   );
 
-  // ➕ Add
   const handleAdd = () => {
     setEditId(null);
     setForm({ name: "", description: "" });
     setModalOpen(true);
   };
 
-  // ✏️ Edit
   const handleEdit = (d: any) => {
     setEditId(d._id);
     setForm({
@@ -63,39 +63,61 @@ export default function DepartmentPage() {
     setModalOpen(true);
   };
 
-  // 💾 Save
+  // ✅ SAVE WITH TOASTIFY
   const handleSave = async () => {
     try {
       if (editId) {
         await AxiosInstance.post("/admin/department/delete", {
           id: editId,
         });
+        toast.success("✅ Department Updated");
       }
 
       await AxiosInstance.post("/admin/doctor/department", form);
 
+      toast.success("🎉 Department Saved");
+
       setModalOpen(false);
       loadData();
     } catch (err) {
+      toast.error("❌ Error!");
       console.log(err);
     }
   };
 
-  // ❌ Delete
+  // ✅ DELETE WITH SWEET ALERT
   const handleDelete = async (id: string) => {
-    try {
-      await AxiosInstance.post("/admin/department/delete", { id });
-      loadData();
-    } catch (err) {
-      console.log(err);
+    const result = await Swal.fire({
+      title: "Are you sure?",
+      text: "Delete this department?",
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonColor: "#ef4444",
+      cancelButtonColor: "#6b7280",
+      confirmButtonText: "Yes Delete",
+    });
+
+    if (result.isConfirmed) {
+      try {
+        await AxiosInstance.post("/admin/department/delete", { id });
+
+        Swal.fire("Deleted!", "Department removed", "success");
+
+        loadData();
+      } catch (err) {
+        Swal.fire("Error!", "Something went wrong", "error");
+      }
     }
   };
 
   return (
     <div className={styles.container}>
+      
+      {/* ✅ TOAST */}
+      <ToastContainer position="top-right" autoClose={2000} />
+
       <h1 className={styles.title}>Department</h1>
 
-      {/* 🔝 TOP BAR */}
       <div className={styles.topBar}>
         <input
           className={styles.search}
@@ -112,46 +134,40 @@ export default function DepartmentPage() {
         </button>
       </div>
 
-      {/* 🧩 CARDS */}
       <div className={styles.grid}>
         {paginated.length === 0 ? (
           <p className={styles.noResult}>No Result Found ❌</p>
         ) : (
           paginated.map((d: any) => (
             <div key={d._id} className={styles.card}>
-              
               <span className={styles.activeBadge}>Active</span>
 
               <h3>{d.name}</h3>
               <p>{d.description}</p>
-
               <small>{d._id}</small>
 
               <div className={styles.actions}>
+                
+                {/* ✅ BUTTON FIX (SAME STYLE) */}
                 <button
                   onClick={() => handleEdit(d)}
-                  className={`${styles.button} ${styles.edit}`}
+                  className={styles.button}
                 >
                   Edit
                 </button>
 
                 <button
-                  onClick={() => {
-                    if (confirm("Delete this department?")) {
-                      handleDelete(d._id);
-                    }
-                  }}
-                  className={`${styles.button} ${styles.delete}`}
-                >
+                  onClick={() => handleDelete(d._id)}
+                  className={styles.button} >
                   Delete
                 </button>
+
               </div>
             </div>
           ))
         )}
       </div>
 
-      {/* 📄 PAGINATION */}
       <div className={styles.pagination}>
         <button
           onClick={() => setPage(page - 1)}
@@ -168,12 +184,12 @@ export default function DepartmentPage() {
         <button
           onClick={() => setPage(page + 1)}
           disabled={page === totalPages}
-          className={styles.pageBtn}>
+          className={styles.pageBtn}
+        >
           Next
         </button>
       </div>
 
-      {/* 🧾 MODAL */}
       {modalOpen && (
         <div className={styles.modalOverlay}>
           <div className={styles.modal}>

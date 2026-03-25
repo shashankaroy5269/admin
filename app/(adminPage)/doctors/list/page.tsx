@@ -1,126 +1,101 @@
- "use client";
+"use client";
 
 import React, { useEffect, useState } from "react";
 import { useAppDispatch, useAppSelector } from "../../../Redux/store/provider";
 import { fetchDoctors, deleteDoctor } from "../../../Redux/slice/doctorSlice";
 import { AxiosInstance } from "@/api/axios/axios";
+import Link from "next/link";
 import Swal from "sweetalert2";
-import EditModal from "@/app/component/modals/EditModal";
 import "./DoctorList.css";
 
 const DoctorList = () => {
   const dispatch = useAppDispatch();
-  const { doctors, loading } = useAppSelector((state) => state.doctor);
+  const { doctors = [], loading } = useAppSelector((state) => state.doctor);
 
   const [page, setPage] = useState(1);
+  const [limit] = useState(5);
   const [search, setSearch] = useState("");
 
+  const [viewModal, setViewModal] = useState(false);
+  const [editModal, setEditModal] = useState(false);
   const [selectedDoc, setSelectedDoc] = useState<any>(null);
-  const [showView, setShowView] = useState(false);
-  const [showEdit, setShowEdit] = useState(false);
 
-  const [departments, setDepartments] = useState<any[]>([]);
-
-  const [form, setForm] = useState<any>({
-    name: "",
-    fees: "",
-    departmentId: "",
-    schedule: {
-      startTime: "",
-      endTime: "",
-      slotDuration: "",
-    },
-  });
-
-  // FETCH DOCTOR
   useEffect(() => {
-    dispatch(fetchDoctors({ page, limit: 5, search }));
-  }, [page, search]);
+    dispatch(fetchDoctors({ page, limit, search }));
+  }, [dispatch, page, limit, search]);
 
-  // FETCH DEPARTMENT
-  useEffect(() => {
-    const getDept = async () => {
-      const res = await AxiosInstance.get("/admin/departments/list");
-      setDepartments(res.data.data);
-    };
-    getDept();
-  }, []);
-
-  // DELETE
+  // 🔥 DELETE (SweetAlert)
   const handleDelete = (id: string) => {
     Swal.fire({
-      title: "Delete Doctor?",
+      title: "Are you sure?",
+      text: "You won't be able to undo this!",
       icon: "warning",
       showCancelButton: true,
-    }).then((res) => {
-      if (res.isConfirmed) {
+      confirmButtonColor: "#6366f1",
+      cancelButtonColor: "#ef4444",
+      confirmButtonText: "Yes, delete it!",
+    }).then((result) => {
+      if (result.isConfirmed) {
         dispatch(deleteDoctor(id));
+
+        Swal.fire("Deleted!", "Doctor removed successfully.", "success");
       }
     });
   };
 
-  // VIEW
-  const handleView = async (id: string) => {
+  const openViewModal = async (id: string) => {
     const res = await AxiosInstance.get(`/admin/doctor/details/${id}`);
     setSelectedDoc(res.data.data);
-    setShowView(true);
+    setViewModal(true);
   };
 
-  // EDIT
-  const handleEdit = (doc: any) => {
-    setSelectedDoc(doc);
-
-    setForm({
-      name: doc.name,
-      fees: doc.fees,
-      departmentId: doc.departmentId,
-      schedule: doc.schedule  {
-        startTime: "",
-        endTime: "",
-        slotDuration: "",
-      },
-    });
-
-    setShowEdit(true);
+  const openEditModal = async (id: string) => {
+    const res = await AxiosInstance.get(`/admin/doctor/details/${id}`);
+    setSelectedDoc(res.data.data);
+    setEditModal(true);
   };
 
-  // SAVE
-  const handleSave = async () => {
+  // 🔥 UPDATE (SweetAlert)
+  const handleUpdateSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
     try {
       await AxiosInstance.post("/admin/doctor/update", {
         id: selectedDoc._id,
-        ...form,
+        name: selectedDoc.name,
+        fees: selectedDoc.fees,
       });
 
-      Swal.fire("Updated!", "", "success");
+      Swal.fire("Updated!", "Doctor updated successfully", "success");
 
-      setShowEdit(false);
-      dispatch(fetchDoctors({ page, limit: 5, search }));
+      setEditModal(false);
+      dispatch(fetchDoctors({ page, limit, search }));
     } catch {
       Swal.fire("Error!", "Update failed", "error");
     }
   };
 
   return (
-    <div className="container">
-
-      {/* HEADER */}
-      <div className="top-bar">
-        <h2>👨‍⚕️ Doctor Management</h2>
-        <a href="/doctors/create" className="add-btn">
+    <div className="list-container">
+      <div className="list-header">
+        <h2> Doctor Management</h2>
+        <Link href="/doctors/create" className="add-btn">
           + Add Doctor
-        </a>
+        </Link>
       </div>
 
-      {/* SEARCH */}
-      <input
-        className="search"
-        placeholder="Search doctor..."
-        onChange={(e) => setSearch(e.target.value)}
-      />
+      <div className="search-box">
+        <input
+          type="text"
+          placeholder="🔍 Search doctor..."
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
+        />
+      </div>
 
-      {/* TABLE */}
-      <table className="table">
+      <table className="doctor-table">
         <thead>
           <tr>
             <th>Name</th>
@@ -132,32 +107,23 @@ const DoctorList = () => {
 
         <tbody>
           {loading ? (
-            <tr><td colSpan={4}>Loading...</td></tr>
+            <tr>
+              <td colSpan={4}>Loading...</td>
+            </tr>
           ) : (
-            doctors?.map((doc: any) => (
+            doctors.map((doc: any) => (
               <tr key={doc._id}>
                 <td>{doc.name}</td>
                 <td>₹{doc.fees}</td>
                 <td>{doc.department?.name || "N/A"}</td>
-
-                <td>
-                  <button
-                    className="btn view"
-                    onClick={() => handleView(doc._id)}
-                  >
+                <td className="actions">
+                  <button onClick={() => openViewModal(doc._id)} className="view-btn">
                     View
                   </button>
-
-                  <button
-                    className="btn edit"
-                    onClick={() => handleEdit(doc)}
-                  >
+                  <button onClick={() => openEditModal(doc._id)} className="edit-btn">
                     Edit
                   </button>
-
-                  <button
-                    className="btn delete"
-                    onClick={() => handleDelete(doc._id)} >
+                  <button onClick={() => handleDelete(doc._id)} className="delete-btn">
                     Delete
                   </button>
                 </td>
@@ -168,51 +134,111 @@ const DoctorList = () => {
       </table>
 
       {/* VIEW MODAL */}
-      {showView && selectedDoc && (
-        <div className="overlay" onClick={() => setShowView(false)}>
-          <div className="modal" onClick={(e) => e.stopPropagation()}>
 
-            <div className="avatar">
-              {selectedDoc.name.charAt(0)}
+      {viewModal && selectedDoc && (
+        <div className="modal-overlay" onClick={() => setViewModal(false)}>
+          <div className="modal-content view-card" onClick={(e) => e.stopPropagation()}>
+            <div className="view-card-header">
+              <div className="profile-avatar">
+                {selectedDoc.name.charAt(0).toUpperCase()}
+              </div>
+              <div className="header-info">
+                <h3>{selectedDoc.name}</h3>
+                <span className="status-badge">Active Doctor</span>
+              </div>
             </div>
 
-            <h2>{selectedDoc.name}</h2>
-            <p>💰 ₹{selectedDoc.fees}</p>
-            <p>🏥 {selectedDoc.department?.name || "N/A"}</p>
+            <div className="view-card-body">
+              <div className="info-grid">
+                <div className="info-item">
+                  <label>Consultation Fees</label>
+                  <p className="fee-amount">₹{selectedDoc.fees}</p>
+                </div>
+                <div className="info-item">
+                  <label>Department</label>
+                  <p>{selectedDoc.department?.name || "General"}</p>
+                </div>
+              </div>
 
-            <div className="modal-btns">
-              <button
-                className="edit-btn"
-                onClick={() => {
-                  setShowView(false);
-                  handleEdit(selectedDoc);
-                }}
-              >
-                Edit
-              </button>
-
-              <button
-                className="close-btn"
-                onClick={() => setShowView(false)}
-              >
-                Close
-              </button>
+              <div className="slots-container">
+                <h4> Available Schedule</h4>
+                <div className="slots-grid">
+                  {selectedDoc?.availableSlots?.length > 0 ? (
+                    selectedDoc.availableSlots.map((s: any, i: number) => (
+                      <div key={i} className="slot-badge">
+                        <span className="slot-date">{s.date}</span>
+                        <span className="slot-time">{s.time}</span>
+                      </div>
+                    ))
+                  ) : (
+                    <p style={{ color: "#64748b" }}>No slots available</p>
+                  )}
+                </div>
+              </div>
             </div>
 
+            <div className="view-card-footer">
+              <button className="close-btn" onClick={() => setViewModal(false)}>Dismiss</button>
+            </div>
           </div>
         </div>
       )}
 
       {/* EDIT MODAL */}
-      <EditModal
-        isOpen={showEdit}
-        onClose={() => setShowEdit(false)}
-        onSave={handleSave}
-        form={form}
-        setForm={setForm}
-        departments={departments}
-      />
+      {editModal && selectedDoc && (
+        <div className="modal-overlay">
+          <div className="modal-content">
+            <h3 className="modal-title">Edit Doctor</h3>
 
+            <form onSubmit={handleUpdateSubmit} className="modal-form">
+
+              <div className="form-group">
+                <label>Name</label>
+                <input
+                  value={selectedDoc.name}
+                  onChange={(e) =>
+                    setSelectedDoc({ ...selectedDoc, name: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="form-group">
+                <label>Fees</label>
+                <input
+                  value={selectedDoc.fees}
+                  onChange={(e) =>
+                    setSelectedDoc({ ...selectedDoc, fees: e.target.value })
+                  }
+                />
+              </div>
+
+              <div className="modal-actions">
+                <button type="submit" className="btn">
+                  Save Changes
+                </button>
+
+                <button
+                  type="button"
+                  className="btn cancel-btn"
+                  onClick={() => setEditModal(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+
+            </form>
+          </div>
+        </div>
+      )}
+      <div className="pagination">
+        <button disabled={page === 1} onClick={() => setPage(page - 1)}>
+          Prev
+        </button>
+        <span>Page {page}</span>
+        <button disabled={doctors.length < limit} onClick={() => setPage(page + 1)}>
+          Next
+        </button>
+      </div>
     </div>
   );
 };
